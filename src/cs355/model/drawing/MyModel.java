@@ -6,11 +6,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import cs355.GUIFunctions;
+
 public class MyModel extends CS355Drawing{
 
 	List<Shape> shapeList = new ArrayList<Shape>();
 	Shape selectedShape;
 	int selectedIndex;
+	Point2D.Double viewPoint = new Point2D.Double(768, 768);
+	int viewWidth = 512;
+	int zoomLevel = 3;
 	
 	@Override
 	public Shape getShape(int index) {
@@ -276,7 +281,74 @@ public class MyModel extends CS355Drawing{
 		notifyObservers();
 	}
 	
-	public void setZoom(int zoomLevel) {
-		
+	public void setZoom(int zoom) {
+		double x;
+		double y;
+		while (zoom != zoomLevel){
+			if (zoom < zoomLevel){
+				x = viewPoint.getX() + viewWidth/2;
+				y = viewPoint.getY() + viewWidth/2;
+				viewWidth = viewWidth/2;
+				x = x - viewWidth/2;
+				y = y - viewWidth/2;
+				viewPoint.setLocation(x,y);
+				zoomLevel--;
+			} else if (zoom > zoomLevel) {
+				x = viewPoint.getX() + viewWidth/2;
+				y = viewPoint.getY() + viewWidth/2;
+				viewWidth = viewWidth*2;
+				x = x - viewWidth/2;
+				y = y - viewWidth/2;
+
+				if (x < 0) {x = 0;}
+				else if (x + viewWidth > 2048) {x = x - (x + viewWidth - 2048);}
+				if (y < 0) {y = 0;}
+				else if (y + viewWidth > 2048) {y = y - (y + viewWidth - 2048);}
+				
+				viewPoint.setLocation(x, y);
+				zoomLevel++;
+			}
+		}
+		setChanged();
+		notifyObservers();
+		GUIFunctions.printf("ViewPoint: " + viewPoint.getX() + "," + viewPoint.getY());
+	}
+	
+	public int getWidth() {
+		return viewWidth;
+	}
+	
+	public Point2D.Double getViewPoint() {
+		return viewPoint;
+	}
+	
+	public void hScrollbarChanged(int value) {
+		if(value != viewPoint.getX()){
+			viewPoint.setLocation(value, viewPoint.getY());
+			setChanged();
+			notifyObservers();
+		}
+	}
+	
+	public void vScrollbarChanged(int value) {
+		if(value != viewPoint.getY()){
+			viewPoint.setLocation(viewPoint.getX(), value);
+			setChanged();
+			notifyObservers();
+		}
+	}
+	
+	public double getScale() {
+		if(zoomLevel == 1) {
+			return .25;
+		} else if (zoomLevel == 2) {
+			return .5;
+		} else if (zoomLevel == 3) {
+			return 1;
+		} else if (zoomLevel == 4) {
+			return 2;
+		} else {
+			return 4;
+		}
 	}
 }

@@ -29,6 +29,10 @@ public class CS355 {
 		// Fill in the parameters below with your controller and view.
 		GUIFunctions.createCS355Frame(controller, view);
 		GUIFunctions.changeSelectedColor(Color.white);
+		GUIFunctions.setHScrollBarMin(0);
+		GUIFunctions.setHScrollBarMax(2048);
+		GUIFunctions.setVScrollBarMin(0);
+		GUIFunctions.setVScrollBarMax(2048);
 		GUIFunctions.refresh();
 	}
 }

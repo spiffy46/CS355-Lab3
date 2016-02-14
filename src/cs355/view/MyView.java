@@ -36,7 +36,8 @@ public class MyView implements ViewRefresher{
 	public void refreshView(Graphics2D g2d) {
 		Graphics2D toDrawOn = (Graphics2D) g2d;
 		for(int i = 0; i < shapeList.size(); i++){
-			AffineTransform objToWorld = new AffineTransform();
+			AffineTransform objToWorld = new AffineTransform(1/modelUpdate.getScale(),0,0,1/modelUpdate.getScale(),0,0);
+			objToWorld.concatenate(new AffineTransform(1,0,0,1,-modelUpdate.getViewPoint().getX(),-modelUpdate.getViewPoint().getY()));
 			toDrawOn.setTransform(objToWorld);
 			Shape s = shapeList.get(i);
 			if(s instanceof Line){
@@ -45,9 +46,8 @@ public class MyView implements ViewRefresher{
 
 				double theta = -l.getRotation();
 				
-				AffineTransform rotate = new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0);
-				objToWorld = new AffineTransform(1,0,0,1,center.getX(),center.getY());
-				objToWorld.concatenate(rotate);
+				objToWorld.concatenate(new AffineTransform(1,0,0,1,center.getX(),center.getY()));
+				objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 				
 				toDrawOn.setTransform(objToWorld);
 				toDrawOn.setColor(l.getColor());
@@ -59,9 +59,8 @@ public class MyView implements ViewRefresher{
 				
 				double theta = -sq.getRotation();
 				
-				AffineTransform rotate = new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0);
-				objToWorld = new AffineTransform(1,0,0,1,center.getX(),center.getY());
-				objToWorld.concatenate(rotate);
+				objToWorld.concatenate(new AffineTransform(1,0,0,1,center.getX(),center.getY()));
+				objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 				
 				toDrawOn.setTransform(objToWorld);
 				toDrawOn.setColor(sq.getColor());
@@ -74,9 +73,8 @@ public class MyView implements ViewRefresher{
 				
 				double theta = -r.getRotation();
 				
-				AffineTransform rotate = new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0);
-				objToWorld = new AffineTransform(1,0,0,1,center.getX(),center.getY());
-				objToWorld.concatenate(rotate);
+				objToWorld.concatenate(new AffineTransform(1,0,0,1,center.getX(),center.getY()));
+				objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 				
 				toDrawOn.setTransform(objToWorld);
 				toDrawOn.setColor(r.getColor());
@@ -87,9 +85,8 @@ public class MyView implements ViewRefresher{
 				
 				double theta = -c.getRotation();
 				
-				AffineTransform rotate = new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0);
-				objToWorld = new AffineTransform(1,0,0,1,c.getCenter().getX(),c.getCenter().getY());
-				objToWorld.concatenate(rotate);
+				objToWorld.concatenate(new AffineTransform(1,0,0,1,c.getCenter().getX(),c.getCenter().getY()));
+				objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 				
 				toDrawOn.setColor(c.getColor());
 				toDrawOn.fillOval((int)-radius, (int)-radius, (int)(radius*2), (int)(radius*2));
@@ -101,9 +98,8 @@ public class MyView implements ViewRefresher{
 				
 				double theta = -el.getRotation();
 				
-				AffineTransform rotate = new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0);
-				objToWorld = new AffineTransform(1,0,0,1,center.getX(),center.getY());
-				objToWorld.concatenate(rotate);
+				objToWorld.concatenate(new AffineTransform(1,0,0,1,center.getX(),center.getY()));
+				objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 				
 				toDrawOn.setTransform(objToWorld);
 				toDrawOn.setColor(el.getColor());
@@ -116,9 +112,8 @@ public class MyView implements ViewRefresher{
 				
 				double theta = -t.getRotation();
 				
-				AffineTransform rotate = new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0);
-				objToWorld = new AffineTransform(1,0,0,1,center.getX(),center.getY());
-				objToWorld.concatenate(rotate);
+				objToWorld.concatenate(new AffineTransform(1,0,0,1,center.getX(),center.getY()));
+				objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 				
 				toDrawOn.setTransform(objToWorld);
 				toDrawOn.setColor(t.getColor());
@@ -129,6 +124,24 @@ public class MyView implements ViewRefresher{
 		if (selectedShape != null) {
 			drawHandles(selectedShape, g2d);
 		}
+		
+		drawKnobs();
+		
+	}
+	
+	public void drawKnobs() {
+		int w = modelUpdate.getWidth();
+		Point2D.Double viewPoint = modelUpdate.getViewPoint();
+		int x = (int)viewPoint.getX();
+		int y = (int)viewPoint.getY();
+		GUIFunctions.setHScrollBarKnob(0);
+		GUIFunctions.setVScrollBarKnob(0);
+		GUIFunctions.setHScrollBarPosit(x);
+		GUIFunctions.setVScrollBarPosit(y);
+		GUIFunctions.setHScrollBarKnob(w);
+		GUIFunctions.setVScrollBarKnob(w);
+
+		
 	}
 
 	public void drawHandles(Shape s, Graphics2D g2d) {

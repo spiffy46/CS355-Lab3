@@ -43,7 +43,13 @@ public class MyController implements CS355Controller{
 
 	@Override
 	public void mousePressed(MouseEvent e) {
+		AffineTransform viewToWorld = new AffineTransform(1,0,0,1,model.getViewPoint().getX(),model.getViewPoint().getY());
+		AffineTransform scale = new AffineTransform(model.getScale(),0,0,model.getScale(),0,0);
+		viewToWorld.concatenate(scale);		
+		
 		p1 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
+		viewToWorld.transform(p1, p1);
+				
 		if (button == "line"){
 			currentShape = new Line(col,p1,p1);
 		}else if(button == "square"){
@@ -115,7 +121,14 @@ public class MyController implements CS355Controller{
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
+		AffineTransform viewToWorld = new AffineTransform(1,0,0,1,model.getViewPoint().getX(),model.getViewPoint().getY());
+		AffineTransform scale = new AffineTransform(model.getScale(),0,0,model.getScale(),0,0);
+		viewToWorld.concatenate(scale);	
+		
 		p2 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
+		viewToWorld.transform(p2, p2);
+		
+		GUIFunctions.printf("S: " + (int)p1.getX() + "," + (int)p1.getY() + " E: " + (int)p2.getX() + "," + (int)p2.getY());
 		
 		if (button == "line"){
 			currentShape = model.getShape(model.getSize()-1);
@@ -318,26 +331,25 @@ public class MyController implements CS355Controller{
 		if(zoomLevel > 1) {
 			zoomLevel--;
 			model.setZoom(zoomLevel);
-		}
-		
+		}		
 	}
 
 	@Override
 	public void zoomOutButtonHit() {
-		// TODO Auto-generated method stub
-		
+		if(zoomLevel < 5) {
+			zoomLevel++;
+			model.setZoom(zoomLevel);
+		}
 	}
 
 	@Override
 	public void hScrollbarChanged(int value) {
-		// TODO Auto-generated method stub
-		
+		model.hScrollbarChanged(value);
 	}
 
 	@Override
 	public void vScrollbarChanged(int value) {
-		// TODO Auto-generated method stub
-		
+		model.vScrollbarChanged(value);
 	}
 
 	@Override
@@ -376,7 +388,6 @@ public class MyController implements CS355Controller{
 		
 	}
 
-	//Lab1
 	@Override
 	public void saveDrawing(File file) {
 		model.save(file);
@@ -388,10 +399,8 @@ public class MyController implements CS355Controller{
 		model.open(file);
 	}
 
-	//Lab2
 	@Override
 	public void doDeleteShape() {
-		// TODO Auto-generated method stub
 		if(selectedIndex > -1){
 			model.deleteShape(selectedIndex);
 		}
@@ -459,7 +468,6 @@ public class MyController implements CS355Controller{
 
 	@Override
 	public void doSendToFront() {
-		// TODO Auto-generated method stub
 		if (selectedIndex > -1){
 			model.moveToFront(selectedIndex);
 			selectedIndex = model.getShapes().size()-1;
@@ -468,7 +476,6 @@ public class MyController implements CS355Controller{
 
 	@Override
 	public void doSendtoBack() {
-		// TODO Auto-generated method stub
 		if (selectedIndex > -1){
 			model.movetoBack(selectedIndex);
 			selectedIndex = 0;
