@@ -62,13 +62,13 @@ public class MyController implements CS355Controller{
 			currentShape = new Ellipse(col,p1,0,0);
 		}else if (button == "triangle"){
 			if (triangleCount == 0){
-				t1 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
+				t1 = new Point2D.Double(p1.getX(),p1.getY());
 				triangleCount++;
 			}else if(triangleCount ==1){
-				t2 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
+				t2 = new Point2D.Double(p1.getX(),p1.getY());
 				triangleCount++;
 			}else{
-				t3 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
+				t3 = new Point2D.Double(p1.getX(),p1.getY());
 				Point2D.Double center = new Point2D.Double();
 				center.setLocation((t1.getX()+t2.getX()+t3.getX())/3, (t1.getY()+t2.getY()+t3.getY())/3);
 				triangleCount = 0;
@@ -77,12 +77,12 @@ public class MyController implements CS355Controller{
 			}	
 			return;
 		}else if (button == "select"){
-			selectedIndex = model.geometryTest(e.getPoint(), 4);
+			selectedIndex = model.geometryTest(p1, 4);
 			if (selectedIndex > -1){
 				Shape s = model.getShape(selectedIndex);
 				GUIFunctions.changeSelectedColor(s.getColor());
-				diff = new Point2D.Double(e.getX()-s.getCenter().getX(), e.getY()-s.getCenter().getY());
-				if(model.doHandleCheck(e.getPoint())){
+				diff = new Point2D.Double(p1.getX()-s.getCenter().getX(), p1.getY()-s.getCenter().getY());
+				if(model.doHandleCheck(p1)){
 					handleSelected = true;
 					if(s instanceof Line){
 						Line l = (Line)s;
@@ -90,7 +90,7 @@ public class MyController implements CS355Controller{
 
 						AffineTransform worldToObj = new AffineTransform(1,0,0,1,-s.getCenter().getX(), -s.getCenter().getY());
 						Point2D.Double objCoord = new Point2D.Double();
-						worldToObj.transform(e.getPoint(), objCoord);
+						worldToObj.transform(p1, objCoord);
 						
 						if (objCoord.getX()*objCoord.getX() + objCoord.getY()*objCoord.getY() < 100){
 							lineHandleSelected = 1;
@@ -127,9 +127,7 @@ public class MyController implements CS355Controller{
 		
 		p2 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
 		viewToWorld.transform(p2, p2);
-		
-		GUIFunctions.printf("S: " + (int)p1.getX() + "," + (int)p1.getY() + " E: " + (int)p2.getX() + "," + (int)p2.getY());
-		
+				
 		if (button == "line"){
 			currentShape = model.getShape(model.getSize()-1);
 			Line l = (Line)currentShape;
@@ -207,16 +205,16 @@ public class MyController implements CS355Controller{
 			if(handleSelected) {
 				AffineTransform worldToObj = new AffineTransform(1,0,0,1,-s.getCenter().getX(), -s.getCenter().getY());
 				Point2D.Double objCoord = new Point2D.Double();
-				worldToObj.transform(e.getPoint(), objCoord);
+				worldToObj.transform(p2, objCoord);
 				
 				if(s instanceof Line){
 					Line l = (Line)s;
 
 					if (lineHandleSelected == 1){
-						Point2D.Double newCenter = new Point2D.Double(e.getX(), e.getY());
+						Point2D.Double newCenter = new Point2D.Double(p2.getX(), p2.getY());
 						l.setCenter(newCenter);
 					} else if(lineHandleSelected == 2){
-						Point2D.Double newEnd = new Point2D.Double(e.getX(), e.getY());
+						Point2D.Double newEnd = new Point2D.Double(p2.getX(), p2.getY());
 						l.setEnd(newEnd);
 					}
 					s = l;
@@ -233,12 +231,11 @@ public class MyController implements CS355Controller{
 					model.setSelectedShape(selectedIndex);
 				}
 			} else {
-				Point2D.Double newCenter = new Point2D.Double((e.getX()-diff.getX()), (e.getY()-diff.getY()));
+				Point2D.Double newCenter = new Point2D.Double((p2.getX()-diff.getX()), (p2.getY()-diff.getY()));
 			
 				if(s instanceof Line) {
 					Line l = (Line)s;
 					Point2D.Double len = new Point2D.Double(l.getEnd().getX() - l.getCenter().getX(), l.getEnd().getY() - l.getCenter().getY());
-					GUIFunctions.printf("Len: " + (int)len.getX() + "," + (int)len.getY());
 					Point2D.Double newEnd = new Point2D.Double((newCenter.getX()+len.getX()), (newCenter.getY()+len.getY()));
 					l.setEnd(newEnd);
 					s = l;

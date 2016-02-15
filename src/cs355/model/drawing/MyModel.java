@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import cs355.GUIFunctions;
-
 public class MyModel extends CS355Drawing{
 
 	List<Shape> shapeList = new ArrayList<Shape>();
@@ -113,30 +111,30 @@ public class MyModel extends CS355Drawing{
 			
 			Point2D.Double len = new Point2D.Double(s.getEnd().getX() - s.getCenter().getX(), s.getEnd().getY() - s.getCenter().getY());
 			
-			if (objCoord.getX()*objCoord.getX() + objCoord.getY()*objCoord.getY() < 100){
+			if (objCoord.getX()*objCoord.getX() + objCoord.getY()*objCoord.getY() < 100*this.getScale()){
 				return true;
-			} else if((objCoord.getX()-len.getX())*(objCoord.getX()-len.getX()) + (objCoord.getY()-len.getY())*(objCoord.getY()-len.getY()) < 100){
+			} else if((objCoord.getX()-len.getX())*(objCoord.getX()-len.getX()) + (objCoord.getY()-len.getY())*(objCoord.getY()-len.getY()) < 100*this.getScale()){
 				return true;
 			}
 		}else if(selectedShape instanceof Square){
 			Square s = (Square)selectedShape;
-			double c = s.getSize()/2 + 20;
+			double c = s.getSize()/2 + (20 * this.getScale());
 			
-			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)){
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
 				return true;
 			} 
 		} else if (selectedShape instanceof Rectangle) {
 			Rectangle s = (Rectangle)selectedShape;
-			double c = s.getHeight()/2 + 20;
+			double c = s.getHeight()/2 + (20 * this.getScale());
 			
-			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)){
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
 				return true;
 			} 
 		} else if (selectedShape instanceof Ellipse) {
 			Ellipse s = (Ellipse)selectedShape;
-			double c = s.getHeight()/2 + 20;
+			double c = s.getHeight()/2 + (20 * this.getScale());
 			
-			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)){
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
 				return true;
 			} 
 		} else if (selectedShape instanceof Triangle) {
@@ -147,7 +145,7 @@ public class MyModel extends CS355Drawing{
 
 			double c = Math.max(lca, Math.max(lcb,lcc));	
 			
-			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)){
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
 				return true;
 			} 
 		}
@@ -183,7 +181,8 @@ public class MyModel extends CS355Drawing{
 				Point2D.Double q = new Point2D.Double();
 				q.setLocation(x0 + t * d.getX(), y0 + t * d.getY());
 				double qdist = Math.sqrt((objCoord.getX() - q.getX())*(objCoord.getX() - q.getX()) + (objCoord.getY() - q.getY())*(objCoord.getY() - q.getY()));
-				if (qdist <= 4 && t >= -4 && t <= lineLength + 4){
+				tolerance = (int)(tolerance * this.getScale());
+				if (qdist <= tolerance && t >= -tolerance && t <= lineLength + tolerance){
 					selectedShape = l;
 					selectedIndex = shapeList.size()-i-1;
 					setChanged();
@@ -253,6 +252,10 @@ public class MyModel extends CS355Drawing{
 				notifyObservers();
 			}
 		}
+		selectedShape = null;
+		selectedIndex = -1;
+		setChanged();
+		notifyObservers();
 		return -1;
 	}
 	
@@ -311,7 +314,6 @@ public class MyModel extends CS355Drawing{
 		}
 		setChanged();
 		notifyObservers();
-		GUIFunctions.printf("ViewPoint: " + viewPoint.getX() + "," + viewPoint.getY());
 	}
 	
 	public int getWidth() {
