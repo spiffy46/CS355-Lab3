@@ -682,7 +682,6 @@ public class MyController extends Observable implements CS355Controller{
 		AffineTransform worldToObj = new AffineTransform(Math.cos(selectedShape.getRotation()),-Math.sin(selectedShape.getRotation()),Math.sin(selectedShape.getRotation()),Math.cos(selectedShape.getRotation()),0,0);
 		worldToObj.concatenate(new AffineTransform(1,0,0,1,-selectedShape.getCenter().getX(), -selectedShape.getCenter().getY()));
 		worldToObj.transform(worldCoord, objCoord);
-		GUIFunctions.printf("Converted Point: " + (int)objCoord.getX() + "," + (int)objCoord.getY());
 		
 		if(selectedShape instanceof Line){
 			Line s = (Line) selectedShape;
