@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Observable;
 
 import cs355.GUIFunctions;
+import cs355.controller.MyController;
 import cs355.model.drawing.Circle;
 import cs355.model.drawing.Ellipse;
 import cs355.model.drawing.Line;
@@ -21,6 +22,7 @@ import cs355.model.drawing.Triangle;
 public class MyView implements ViewRefresher{
 
 	private MyModel modelUpdate;
+	private MyController controllerUpdate;
 	List<Shape> shapeList = new ArrayList<Shape>();
 	
 	@Override
@@ -28,6 +30,8 @@ public class MyView implements ViewRefresher{
 		if(o instanceof MyModel){
 			modelUpdate = (MyModel) o;
 			shapeList = modelUpdate.getShapes();
+		} else if(o instanceof MyController) {
+			controllerUpdate = (MyController) o;
 		} else {}
 		GUIFunctions.refresh();
 	}
@@ -36,8 +40,8 @@ public class MyView implements ViewRefresher{
 	public void refreshView(Graphics2D g2d) {
 		Graphics2D toDrawOn = (Graphics2D) g2d;
 		for(int i = 0; i < shapeList.size(); i++){
-			AffineTransform objToWorld = new AffineTransform(1/modelUpdate.getScale(),0,0,1/modelUpdate.getScale(),0,0);
-			objToWorld.concatenate(new AffineTransform(1,0,0,1,-modelUpdate.getViewPoint().getX(),-modelUpdate.getViewPoint().getY()));
+			AffineTransform objToWorld = new AffineTransform(1/controllerUpdate.getScale(),0,0,1/controllerUpdate.getScale(),0,0);
+			objToWorld.concatenate(new AffineTransform(1,0,0,1,-controllerUpdate.getViewPoint().getX(),-controllerUpdate.getViewPoint().getY()));
 			toDrawOn.setTransform(objToWorld);
 			Shape s = shapeList.get(i);
 			if(s instanceof Line){
@@ -88,6 +92,7 @@ public class MyView implements ViewRefresher{
 				objToWorld.concatenate(new AffineTransform(1,0,0,1,c.getCenter().getX(),c.getCenter().getY()));
 				objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 				
+				toDrawOn.setTransform(objToWorld);
 				toDrawOn.setColor(c.getColor());
 				toDrawOn.fillOval((int)-radius, (int)-radius, (int)(radius*2), (int)(radius*2));
 			}else if(s instanceof Ellipse){
@@ -120,7 +125,7 @@ public class MyView implements ViewRefresher{
 				toDrawOn.fillPolygon(x, y, 3);
 			}else{}
 		}
-		Shape selectedShape = modelUpdate.getSelectedShape();
+		Shape selectedShape = controllerUpdate.getSelectedShape();
 		if (selectedShape != null) {
 			drawHandles(selectedShape, g2d);
 		}
@@ -130,8 +135,8 @@ public class MyView implements ViewRefresher{
 	}
 	
 	public void drawKnobs() {
-		int w = modelUpdate.getWidth();
-		Point2D.Double viewPoint = modelUpdate.getViewPoint();
+		int w = controllerUpdate.getViewWidth();
+		Point2D.Double viewPoint = controllerUpdate.getViewPoint();
 		int x = (int)viewPoint.getX();
 		int y = (int)viewPoint.getY();
 		GUIFunctions.setHScrollBarKnob(0);
@@ -146,8 +151,8 @@ public class MyView implements ViewRefresher{
 
 	public void drawHandles(Shape s, Graphics2D g2d) {
 		
-		AffineTransform objToWorld = new AffineTransform(1/modelUpdate.getScale(),0,0,1/modelUpdate.getScale(),0,0);
-		objToWorld.concatenate(new AffineTransform(1,0,0,1,-modelUpdate.getViewPoint().getX(),-modelUpdate.getViewPoint().getY()));
+		AffineTransform objToWorld = new AffineTransform(1/controllerUpdate.getScale(),0,0,1/controllerUpdate.getScale(),0,0);
+		objToWorld.concatenate(new AffineTransform(1,0,0,1,-controllerUpdate.getViewPoint().getX(),-controllerUpdate.getViewPoint().getY()));
 		
 		Graphics2D toDrawOn = (Graphics2D) g2d;
 		toDrawOn.setColor(Color.RED);
@@ -159,21 +164,22 @@ public class MyView implements ViewRefresher{
 		objToWorld.concatenate(new AffineTransform(Math.cos(theta),-Math.sin(theta),Math.sin(theta),Math.cos(theta),0,0));
 		
 		toDrawOn.setTransform(objToWorld);
+		double scale = controllerUpdate.getScale();
 		
 		if(s instanceof Line){
 			Line l = (Line) s;
 			Point2D.Double end = l.getEnd();
 			
-			toDrawOn.drawOval((int)(-5*modelUpdate.getScale()), (int)(-5*modelUpdate.getScale()), (int)(10 * modelUpdate.getScale()), (int)(10 * modelUpdate.getScale()));
-			toDrawOn.drawOval((int)((end.getX()-center.getX())-(5*modelUpdate.getScale())),(int)((end.getY()-center.getY())-(5*modelUpdate.getScale())),(int)(10 * modelUpdate.getScale()),(int)(10 * modelUpdate.getScale()));
+			toDrawOn.drawOval((int)(-5*scale), (int)(-5*scale), (int)(10 * scale), (int)(10 * scale));
+			toDrawOn.drawOval((int)((end.getX()-center.getX())-(5*scale)),(int)((end.getY()-center.getY())-(5*scale)),(int)(10 * scale),(int)(10 * scale));
 		}else if(s instanceof Square){
 			Square sq =(Square) s;
 			double size = sq.getSize();
 			
 			toDrawOn.drawRect((int)-size/2, (int)-size/2, (int)size, (int)size);
 			
-			double c = size/2 + (20*modelUpdate.getScale());
-			toDrawOn.drawOval((int)(-5*modelUpdate.getScale()), (int)-(c+(5*modelUpdate.getScale())), (int)(10 * modelUpdate.getScale()), (int)(10 * modelUpdate.getScale()));
+			double c = size/2 + (20*scale);
+			toDrawOn.drawOval((int)(-5*scale), (int)-(c+(5*scale)), (int)(10 * scale), (int)(10 * scale));
 		} else if(s instanceof Rectangle){
 			Rectangle r = (Rectangle) s;
 			double width = r.getWidth();
@@ -181,8 +187,8 @@ public class MyView implements ViewRefresher{
 			
 			toDrawOn.drawRect((int)(-width/2), (int)(-height/2), (int)width, (int)height);
 			
-			double c = height/2 + (20*modelUpdate.getScale());
-			toDrawOn.drawOval((int)(-5*modelUpdate.getScale()), (int)-(c+(5*modelUpdate.getScale())), (int)(10 * modelUpdate.getScale()), (int)(10 * modelUpdate.getScale()));
+			double c = height/2 + (20*scale);
+			toDrawOn.drawOval((int)(-5*scale), (int)-(c+(5*scale)), (int)(10 * scale), (int)(10 * scale));
 		} else if(s instanceof Circle){
 			Circle c = (Circle) s;
 			Double radius = c.getRadius();
@@ -195,8 +201,8 @@ public class MyView implements ViewRefresher{
 			
 			toDrawOn.drawRect((int)-w/2, (int)-h/2, w, h);
 			
-			double c = h/2 + (20*modelUpdate.getScale());
-			toDrawOn.drawOval((int)(-5*modelUpdate.getScale()), (int)-(c+(5*modelUpdate.getScale())), (int)(10 * modelUpdate.getScale()), (int)(10 * modelUpdate.getScale()));
+			double c = h/2 + (20*scale);
+			toDrawOn.drawOval((int)(-5*scale), (int)-(c+(5*scale)), (int)(10 * scale), (int)(10 * scale));
 		}else if(s instanceof Triangle){
 			Triangle t = (Triangle) s;
 			int[] xc = {(int)(t.getA().x-center.getX()),(int)(t.getB().x-center.getX()),(int)(t.getC().x-center.getX())};
@@ -209,7 +215,7 @@ public class MyView implements ViewRefresher{
 			double lcc = Math.sqrt(Math.pow((t.getCenter().getX() - t.getC().getX()), 2) + Math.pow((t.getCenter().getY() - t.getC().getY()), 2));
 
 			double c = Math.max(lca, Math.max(lcb,lcc));
-			toDrawOn.drawOval((int)(-5*modelUpdate.getScale()), (int)-(c+(5*modelUpdate.getScale())), (int)(10 * modelUpdate.getScale()), (int)(10 * modelUpdate.getScale()));
+			toDrawOn.drawOval((int)(-5*scale), (int)-(c+(5*scale)), (int)(10 * scale), (int)(10 * scale));
 		}else{}
 	}
 	
@@ -218,4 +224,8 @@ public class MyView implements ViewRefresher{
 		modelUpdate.addObserver(this);
 	}
 	
+	public void setController(MyController controller) {
+		controllerUpdate = controller;
+		controllerUpdate.addObserver(this);
+	}
 }

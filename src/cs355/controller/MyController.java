@@ -7,11 +7,12 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Observable;
 
 import cs355.GUIFunctions;
 import cs355.model.drawing.*;
 
-public class MyController implements CS355Controller{
+public class MyController extends Observable implements CS355Controller{
 	
 	MyModel model;
 	Shape currentShape;
@@ -26,9 +27,12 @@ public class MyController implements CS355Controller{
 	public Point2D.Double t3;
 	public Point2D.Double diff;
 	public int selectedIndex = -1;
+	public Shape selectedShape;
 	public boolean handleSelected = false;
 	public int lineHandleSelected = 0;
 	public int zoomLevel = 3;
+	public Point2D.Double viewPoint = new Point2D.Double(768,768);
+	public int viewWidth = 512;
 
 	public void init() {
 		triangleCount = 0;
@@ -37,14 +41,18 @@ public class MyController implements CS355Controller{
 		col = Color.white;
 		lineHandleSelected = 0;
 		button = "";
+		viewPoint = new Point2D.Double(768,768);
+		zoomLevel = 3;
+		viewWidth = 512;
+		selectedShape = null;
 	}
 	@Override
 	public void mouseClicked(MouseEvent e) {}
 
 	@Override
 	public void mousePressed(MouseEvent e) {
-		AffineTransform viewToWorld = new AffineTransform(1,0,0,1,model.getViewPoint().getX(),model.getViewPoint().getY());
-		AffineTransform scale = new AffineTransform(model.getScale(),0,0,model.getScale(),0,0);
+		AffineTransform viewToWorld = new AffineTransform(1,0,0,1,viewPoint.getX(),viewPoint.getY());
+		AffineTransform scale = new AffineTransform(this.getScale(),0,0,this.getScale(),0,0);
 		viewToWorld.concatenate(scale);		
 		
 		p1 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
@@ -77,12 +85,12 @@ public class MyController implements CS355Controller{
 			}	
 			return;
 		}else if (button == "select"){
-			selectedIndex = model.geometryTest(p1, 4);
+			selectedIndex = geometryTest(p1, 4);
 			if (selectedIndex > -1){
 				Shape s = model.getShape(selectedIndex);
 				GUIFunctions.changeSelectedColor(s.getColor());
 				diff = new Point2D.Double(p1.getX()-s.getCenter().getX(), p1.getY()-s.getCenter().getY());
-				if(model.doHandleCheck(p1)){
+				if(doHandleCheck(p1,selectedShape)){
 					handleSelected = true;
 					if(s instanceof Line){
 						Line l = (Line)s;
@@ -92,9 +100,9 @@ public class MyController implements CS355Controller{
 						Point2D.Double objCoord = new Point2D.Double();
 						worldToObj.transform(p1, objCoord);
 						
-						if (objCoord.getX()*objCoord.getX() + objCoord.getY()*objCoord.getY() < 100){
+						if (objCoord.getX()*objCoord.getX() + objCoord.getY()*objCoord.getY() < 100*this.getScale()){
 							lineHandleSelected = 1;
-						} else if((objCoord.getX()-len.getX())*(objCoord.getX()-len.getX()) + (objCoord.getY()-len.getY())*(objCoord.getY()-len.getY()) < 100){
+						} else if((objCoord.getX()-len.getX())*(objCoord.getX()-len.getX()) + (objCoord.getY()-len.getY())*(objCoord.getY()-len.getY()) < 100*this.getScale()){
 							lineHandleSelected = 2;
 						}
 					}
@@ -121,8 +129,8 @@ public class MyController implements CS355Controller{
 
 	@Override
 	public void mouseDragged(MouseEvent e) {
-		AffineTransform viewToWorld = new AffineTransform(1,0,0,1,model.getViewPoint().getX(),model.getViewPoint().getY());
-		AffineTransform scale = new AffineTransform(model.getScale(),0,0,model.getScale(),0,0);
+		AffineTransform viewToWorld = new AffineTransform(1,0,0,1,viewPoint.getX(),viewPoint.getY());
+		AffineTransform scale = new AffineTransform(this.getScale(),0,0,this.getScale(),0,0);
 		viewToWorld.concatenate(scale);	
 		
 		p2 = new Point2D.Double(e.getPoint().getX(),e.getPoint().getY());
@@ -200,15 +208,14 @@ public class MyController implements CS355Controller{
 			model.deleteShape(model.getSize()-1);
 			model.addShape(el);
 		}else if(button == "select" && selectedIndex > -1){
-			Shape s = model.getSelectedShape();
 
 			if(handleSelected) {
-				AffineTransform worldToObj = new AffineTransform(1,0,0,1,-s.getCenter().getX(), -s.getCenter().getY());
+				AffineTransform worldToObj = new AffineTransform(1,0,0,1,-selectedShape.getCenter().getX(), -selectedShape.getCenter().getY());
 				Point2D.Double objCoord = new Point2D.Double();
 				worldToObj.transform(p2, objCoord);
 				
-				if(s instanceof Line){
-					Line l = (Line)s;
+				if(selectedShape instanceof Line){
+					Line l = (Line)selectedShape;
 
 					if (lineHandleSelected == 1){
 						Point2D.Double newCenter = new Point2D.Double(p2.getX(), p2.getY());
@@ -217,38 +224,36 @@ public class MyController implements CS355Controller{
 						Point2D.Double newEnd = new Point2D.Double(p2.getX(), p2.getY());
 						l.setEnd(newEnd);
 					}
-					s = l;
-					model.setShape(selectedIndex, s);
-					model.setSelectedShape(selectedIndex);
+					selectedShape = l;
+					model.setShape(selectedIndex, selectedShape);
 				}else{
 					
 					double theta = Math.acos(-objCoord.getY()/Math.sqrt(Math.pow(objCoord.getX(), 2) + Math.pow(-objCoord.getY(), 2)));
 					if(objCoord.getX() < 0){
 						theta = -theta;
 					}
-					s.setRotation(theta);
-					model.setShape(selectedIndex, s);
-					model.setSelectedShape(selectedIndex);
+					selectedShape.setRotation(theta);
+					model.setShape(selectedIndex, selectedShape);
 				}
 			} else {
 				Point2D.Double newCenter = new Point2D.Double((p2.getX()-diff.getX()), (p2.getY()-diff.getY()));
 			
-				if(s instanceof Line) {
-					Line l = (Line)s;
+				if(selectedShape instanceof Line) {
+					Line l = (Line)selectedShape;
 					Point2D.Double len = new Point2D.Double(l.getEnd().getX() - l.getCenter().getX(), l.getEnd().getY() - l.getCenter().getY());
 					Point2D.Double newEnd = new Point2D.Double((newCenter.getX()+len.getX()), (newCenter.getY()+len.getY()));
 					l.setEnd(newEnd);
-					s = l;
-				}else if(s instanceof Triangle) {
-					Triangle t = (Triangle)s;
-					Point2D.Double change = new Point2D.Double(newCenter.getX() - s.getCenter().getX(), newCenter.getY() - s.getCenter().getY());
+					selectedShape = l;
+				}else if(selectedShape instanceof Triangle) {
+					Triangle t = (Triangle)selectedShape;
+					Point2D.Double change = new Point2D.Double(newCenter.getX() - selectedShape.getCenter().getX(), newCenter.getY() - selectedShape.getCenter().getY());
 					t.setA(new Point2D.Double(t.getA().getX()+change.getX(),t.getA().getY()+change.getY()));
 					t.setB(new Point2D.Double(t.getB().getX()+change.getX(),t.getB().getY()+change.getY()));
 					t.setC(new Point2D.Double(t.getC().getX()+change.getX(),t.getC().getY()+change.getY()));
-					s = t;
+					selectedShape = t;
 				}
-				s.setCenter(newCenter);
-				model.setShape(selectedIndex, s);
+				selectedShape.setCenter(newCenter);
+				model.setShape(selectedIndex, selectedShape);
 			}
 		}
 	}
@@ -272,7 +277,9 @@ public class MyController implements CS355Controller{
 		button = "line";
 		triangleCount = 0;
 		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
+		selectedShape = null;
+		setChanged();
+		notifyObservers();
 	}
 
 	@Override
@@ -280,7 +287,9 @@ public class MyController implements CS355Controller{
 		button = "square";
 		triangleCount = 0;
 		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
+		selectedShape = null;
+		setChanged();
+		notifyObservers();
 	}
 
 	@Override
@@ -288,7 +297,9 @@ public class MyController implements CS355Controller{
 		button = "rectangle";
 		triangleCount = 0;
 		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
+		selectedShape = null;
+		setChanged();
+		notifyObservers();
 	}
 
 	@Override
@@ -296,7 +307,9 @@ public class MyController implements CS355Controller{
 		button = "circle";
 		triangleCount = 0;
 		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
+		selectedShape = null;
+		setChanged();
+		notifyObservers();
 	}
 
 	@Override
@@ -304,7 +317,9 @@ public class MyController implements CS355Controller{
 		button = "ellipse";
 		triangleCount = 0;
 		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
+		selectedShape = null;
+		setChanged();
+		notifyObservers();
 	}
 
 	@Override
@@ -312,7 +327,9 @@ public class MyController implements CS355Controller{
 		button = "triangle";
 		triangleCount = 0;
 		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
+		selectedShape = null;
+		setChanged();
+		notifyObservers();
 	}
 
 	@Override
@@ -320,14 +337,25 @@ public class MyController implements CS355Controller{
 		button = "select";
 		triangleCount = 0;
 		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
+		selectedShape = null;
+		setChanged();
+		notifyObservers();
 	}
 
 	@Override
 	public void zoomInButtonHit() {
 		if(zoomLevel > 1) {
 			zoomLevel--;
-			model.setZoom(zoomLevel);
+			
+			double x = viewPoint.getX() + viewWidth/2;
+			double y = viewPoint.getY() + viewWidth/2;
+			viewWidth = viewWidth/2;
+			x = x - viewWidth/2;
+			y = y - viewWidth/2;
+			viewPoint.setLocation(x,y);
+			
+			setChanged();
+			notifyObservers();
 		}		
 	}
 
@@ -335,18 +363,41 @@ public class MyController implements CS355Controller{
 	public void zoomOutButtonHit() {
 		if(zoomLevel < 5) {
 			zoomLevel++;
-			model.setZoom(zoomLevel);
+			
+			double x = viewPoint.getX() + viewWidth/2;
+			double y = viewPoint.getY() + viewWidth/2;
+			viewWidth = viewWidth*2;
+			x = x - viewWidth/2;
+			y = y - viewWidth/2;
+
+			if (x < 0) {x = 0;}
+			else if (x + viewWidth > 2048) {x = x - (x + viewWidth - 2048);}
+			if (y < 0) {y = 0;}
+			else if (y + viewWidth > 2048) {y = y - (y + viewWidth - 2048);}
+			
+			viewPoint.setLocation(x, y);
+			
+			setChanged();
+			notifyObservers();
 		}
 	}
 
 	@Override
 	public void hScrollbarChanged(int value) {
-		model.hScrollbarChanged(value);
+		if(value != viewPoint.getX()){
+			viewPoint.setLocation(value, viewPoint.getY());
+			setChanged();
+			notifyObservers();
+		}
 	}
 
 	@Override
 	public void vScrollbarChanged(int value) {
-		model.vScrollbarChanged(value);
+		if(value != viewPoint.getY()){
+			viewPoint.setLocation(viewPoint.getX(), value);
+			setChanged();
+			notifyObservers();
+		}
 	}
 
 	@Override
@@ -400,9 +451,11 @@ public class MyController implements CS355Controller{
 	public void doDeleteShape() {
 		if(selectedIndex > -1){
 			model.deleteShape(selectedIndex);
+			selectedIndex = -1;
+			selectedShape = null;
+			setChanged();
+			notifyObservers();
 		}
-		selectedIndex = -1;
-		model.setSelectedShape(selectedIndex);
 	}
 
 	@Override
@@ -486,5 +539,194 @@ public class MyController implements CS355Controller{
 
 	public Shape getShape() {
 		return currentShape;
+	}
+	
+	public Point2D.Double getViewPoint() {
+		return viewPoint;
+	}
+	
+	public int getViewWidth() {
+		return viewWidth;
+	}
+	
+	public double getScale() {
+		if(zoomLevel == 1) {
+			return .25;
+		} else if (zoomLevel == 2) {
+			return .5;
+		} else if (zoomLevel == 3) {
+			return 1;
+		} else if (zoomLevel == 4) {
+			return 2;
+		} else {
+			return 4;
+		}
+	}
+	
+	public Shape getSelectedShape() {
+		return selectedShape;
+	}
+	
+	public int geometryTest(Point2D worldCoord, int tolerance) {
+		shapeList = model.getShapes();
+		if(selectedShape != null) {
+			if(doHandleCheck(worldCoord,selectedShape)) {
+				return selectedIndex;
+			}
+		}
+		
+		Point2D.Double objCoord = new Point2D.Double();
+		List<Shape> reversed = model.getShapesReversed();
+		
+		for(int i = 0; i < reversed.size(); i++){
+			Shape s = reversed.get(i);
+			AffineTransform worldToObj = new AffineTransform(Math.cos(s.getRotation()),-Math.sin(s.getRotation()),Math.sin(s.getRotation()),Math.cos(s.getRotation()),0,0);
+			worldToObj.concatenate(new AffineTransform(1,0,0,1,-s.getCenter().getX(), -s.getCenter().getY()));
+			worldToObj.transform(worldCoord, objCoord);
+			if(s instanceof Line){
+				Line l = (Line)s;
+				Point2D.Double d = new Point2D.Double();
+				double x1 = l.getEnd().getX() - l.getCenter().getX();
+				double y1 = l.getEnd().getY() - l.getCenter().getY();
+				double lineLength = Math.sqrt((x1)*(x1) + (y1)*(y1));
+				d.setLocation((x1)/lineLength, (y1)/lineLength);
+				double t = (objCoord.getX())*d.getX() + (objCoord.getY())*d.getY();
+				Point2D.Double q = new Point2D.Double();
+				q.setLocation(t * d.getX(), t * d.getY());
+				double qdist = Math.sqrt((objCoord.getX() - q.getX())*(objCoord.getX() - q.getX()) + (objCoord.getY() - q.getY())*(objCoord.getY() - q.getY()));
+				tolerance = (int)(tolerance * this.getScale());
+				if (qdist <= tolerance && t >= -tolerance && t <= lineLength + tolerance){
+					selectedShape = l;
+					selectedIndex = shapeList.size()-i-1;
+					setChanged();
+					notifyObservers();
+					return selectedIndex;
+				}
+			} else if(s instanceof Square){
+				Square sq = (Square)s;
+				if (Math.abs(objCoord.getX())<sq.getSize()/2 && Math.abs(objCoord.getY())<sq.getSize()/2){
+					selectedShape = sq;
+					selectedIndex = shapeList.size()-i-1;
+					setChanged();
+					notifyObservers();
+					return selectedIndex;
+				}
+			} else if(s instanceof Rectangle){
+				Rectangle r = (Rectangle)s;
+				if (Math.abs(objCoord.getX())<r.getWidth()/2 && Math.abs(objCoord.getY())<r.getHeight()/2){
+					selectedShape = r;
+					selectedIndex = shapeList.size()-i-1;
+					setChanged();
+					notifyObservers();
+					return selectedIndex;
+				}
+			} else if(s instanceof Circle){
+				Circle c = (Circle)s;
+				if (objCoord.getX()*objCoord.getX() + objCoord.getY()*objCoord.getY() < (c.getRadius()*c.getRadius())){
+					selectedShape = c;
+					selectedIndex = shapeList.size()-i-1;
+					setChanged();
+					notifyObservers();
+					return selectedIndex;
+				}
+			}else if(s instanceof Ellipse){
+				Ellipse el = (Ellipse)s;
+				double a = el.getWidth()/2;
+				double b = el.getHeight()/2;
+				if ((objCoord.getX()*objCoord.getX())/(a*a) + (objCoord.getY()*objCoord.getY())/(b*b) <= 1){
+					selectedShape = el;
+					selectedIndex = shapeList.size()-i-1;
+					setChanged();
+					notifyObservers();
+					return selectedIndex;
+				}
+			}else if(s instanceof Triangle){
+				Triangle t = (Triangle)s;
+				Point2D.Double a = new Point2D.Double(t.getA().getX() - t.getCenter().getX(), t.getA().getY() - t.getCenter().getY());
+				Point2D.Double b = new Point2D.Double(t.getB().getX() - t.getCenter().getX(), t.getB().getY() - t.getCenter().getY());
+				Point2D.Double c = new Point2D.Double(t.getC().getX() - t.getCenter().getX(), t.getC().getY() - t.getCenter().getY());
+
+				double triArea = calcArea(a,b,c);
+				double a1 = calcArea(objCoord,b,c);
+				double a2 = calcArea(objCoord,a,c);
+				double a3 = calcArea(objCoord,a,b);
+				
+				if(a1 + a2 + a3 <= triArea) {
+					selectedShape = t;
+					selectedIndex = shapeList.size()-i-1;
+					setChanged();
+					notifyObservers();
+					return selectedIndex;
+				}
+			}else{
+				selectedShape = null;
+				selectedIndex = -1;
+				setChanged();
+				notifyObservers();
+			}
+		}
+		selectedShape = null;
+		selectedIndex = -1;
+		setChanged();
+		notifyObservers();
+		return -1;
+	}
+	
+	public double calcArea(Point2D A, Point2D B, Point2D C) {
+		double area = Math.abs(A.getX() * (B.getY()-C.getY()) + B.getX() * (C.getY() - A.getY()) + C.getX() * (A.getY() - B.getY()));
+		return area/2;
+	}
+	
+	public boolean doHandleCheck(Point2D worldCoord, Shape selectedShape) {
+		Point2D.Double objCoord = new Point2D.Double();
+		AffineTransform worldToObj = new AffineTransform(Math.cos(selectedShape.getRotation()),-Math.sin(selectedShape.getRotation()),Math.sin(selectedShape.getRotation()),Math.cos(selectedShape.getRotation()),0,0);
+		worldToObj.concatenate(new AffineTransform(1,0,0,1,-selectedShape.getCenter().getX(), -selectedShape.getCenter().getY()));
+		worldToObj.transform(worldCoord, objCoord);
+		GUIFunctions.printf("Converted Point: " + (int)objCoord.getX() + "," + (int)objCoord.getY());
+		
+		if(selectedShape instanceof Line){
+			Line s = (Line) selectedShape;
+			
+			Point2D.Double len = new Point2D.Double(s.getEnd().getX() - s.getCenter().getX(), s.getEnd().getY() - s.getCenter().getY());
+			
+			if (objCoord.getX()*objCoord.getX() + objCoord.getY()*objCoord.getY() < 100*this.getScale()){
+				return true;
+			} else if((objCoord.getX()-len.getX())*(objCoord.getX()-len.getX()) + (objCoord.getY()-len.getY())*(objCoord.getY()-len.getY()) < 100*this.getScale()){
+				return true;
+			}
+		}else if(selectedShape instanceof Square){
+			Square s = (Square)selectedShape;
+			double c = s.getSize()/2 + (20 * this.getScale());
+			
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
+				return true;
+			} 
+		} else if (selectedShape instanceof Rectangle) {
+			Rectangle s = (Rectangle)selectedShape;
+			double c = s.getHeight()/2 + (20 * this.getScale());
+			
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
+				return true;
+			} 
+		} else if (selectedShape instanceof Ellipse) {
+			Ellipse s = (Ellipse)selectedShape;
+			double c = s.getHeight()/2 + (20 * this.getScale());
+			
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
+				return true;
+			} 
+		} else if (selectedShape instanceof Triangle) {
+			Triangle s = (Triangle)selectedShape;
+			double lca = Math.sqrt(Math.pow((s.getCenter().getX() - s.getA().getX()), 2) + Math.pow((s.getCenter().getY() - s.getA().getY()), 2));
+			double lcb = Math.sqrt(Math.pow((s.getCenter().getX() - s.getB().getX()), 2) + Math.pow((s.getCenter().getY() - s.getB().getY()), 2));
+			double lcc = Math.sqrt(Math.pow((s.getCenter().getX() - s.getC().getX()), 2) + Math.pow((s.getCenter().getY() - s.getC().getY()), 2));
+
+			double c = Math.max(lca, Math.max(lcb,lcc));	
+			
+			if (objCoord.getX()*objCoord.getX() + (objCoord.getY()+c)*(objCoord.getY()+c) < (100)*this.getScale()){
+				return true;
+			} 
+		}
+		return false;
 	}
 }
